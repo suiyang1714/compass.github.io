@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>罗盘</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="static/css/common.css">
+    <script type="text/javascript" src="static/javascript/jquery-3.0.0.min.js"></script>
+</head>
+<body>
+<div class="main" style="overflow: hidden">
+    <div class="main__header">
+        <div class="header__banner"><img src="static/images/banner2.jpg" alt=""></div>
+    </div>
+    <div class="main__content">
+        <div class="compass">
+            <div id="compass_1"><img src="static/images/compass_1.png" alt=""></div>
+            <div id="compass_2"><img src="static/images/compass_2.png" alt=""></div>
+            <div id="compass_4">
+                <img src="static/images/compass_4.png" alt="" class="Pointer">
+            </div>
+            <img src="static/images/compass_5.png" alt="" id="compass_5">
+        </div>
+    </div>
+</div>
+<script>
+    var Angle = 0;
+    var initAngle_in = 360;
+    var initAngle_out = 351;
+    var insideCollection = [
+        {
+            /* GC+S1 */
+            insideDishMin: 270,
+            insideDishMax: 360,
+            reverse: false,
+            index: 's1gc'
+        },
+        {
+            /* BC+AT */
+            insideDishMin: 0,
+            insideDishMax: 45,
+            reverse: false,
+            index: 'bcat'
+        },
+        {
+            /* BC+GT */
+            insideDishMin: 45,
+            insideDishMax: 90,
+            reverse: false,
+            index: 'bcgt'
+        },
+        {
+            /* mCRC+FOLFOX */
+            insideDishMin: 90,
+            insideDishMax: 180,
+            reverse: false,
+            index: 'mCRC'
+        },
+        {
+            /* eCRC+化疗 */
+            insideDishMin: 225,
+            insideDishMax: 270,
+            reverse: false,
+            index: 'eCRC1'
+        },
+        {
+            /* eCRC+FOLFOX */
+            insideDishMin: 180,
+            insideDishMax: 225,
+            reverse: false,
+            index: 'eCRC2'
+        }
+
+    ];
+    var outsideCollection = [
+        {
+            /* 研究 */
+            outsideDishMin: 270,
+            outsideDishMax: 342,
+            reverse: false,
+            index: '研究'
+        },
+        {
+            /* 指南 */
+            outsideDishMin: 342,
+            outsideDishMax: 54,
+            reverse: true,
+            index: '指南'
+        },
+        {
+            /* 竞品 */
+            outsideDishMin: 54,
+            outsideDishMax: 126,
+            reverse: false,
+            index: '竞品'
+
+        },
+        {
+            /* 资料 */
+            outsideDishMin: 126,
+            outsideDishMax: 198,
+            reverse: false,
+            index: '资料'
+        },
+        {
+            /* 机制 */
+            outsideDishMin: 198,
+            outsideDishMax: 270,
+            reverse: false,
+            index: '机制'
+        }
+
+    ];
+    var linkObj = {
+        's1gc研究': 's1gc研究',
+        's1gc指南': 's1gc指南',
+        's1gc机制': 's1gc机制',
+        's1gc资料': 's1gc资料',
+        's1gc竞品': 's1gc竞品',
+        'bcat研究': 'bcat研究',
+        'bcat指南': 'bcat指南',
+        'bcat机制': 'bcat机制',
+        'bcat资料': 'bcat资料',
+        'bcat竞品': 'bcat竞品',
+        'bcgt研究': 'bcgt研究',
+        'bcgt指南': 'bcgt指南',
+        'bcgt机制': 'bcgt机制',
+        'bcgt资料': 'bcgt资料',
+        'bcgt竞品': 'bcgt竞品',
+        'mCRC研究': 'mCRC研究',
+        'mCRC指南': 'mCRC指南',
+        'mCRC机制': 'mCRC机制',
+        'mCRC资料': 'mCRC资料',
+        'mCRC竞品': 'mCRC竞品',
+        'eCRC1研究': 'eCRC1研究',
+        'eCRC1指南': 'eCRC1指南',
+        'eCRC1机制': 'eCRC1机制',
+        'eCRC1资料': 'eCRC1资料',
+        'eCRC1竞品': 'eCRC1竞品',
+        'eCRC2研究': 'eCRC2研究',
+        'eCRC2指南': 'eCRC2指南',
+        'eCRC2机制': 'eCRC2机制',
+        'eCRC2资料': 'eCRC2资料',
+        'eCRC2竞品': 'eCRC2竞品',
+    };
+    (function($){
+        $.fn.RotateH=function(options){
+            var defaults={
+                trigger:document,           //拖动按钮 默认 整个文档
+                centerX:0,                      //圆心点x 默认 对象中心x
+                centerY:0,                      //圆心点y 默认 对象中心y
+                //inertia:true, 惯性旋转 开发中
+                debug:false
+            },_this=this;
+            var ops=$.extend(defaults,options);
+            var startAngle;
+            //初始化
+            function Init(){
+                //初始化圆心点
+                if(ops.centerX==0 && ops.centerY==0){
+                    ops.centerX=_this.offset().left+_this.width()/2;
+                    ops.centerY=_this.offset().top+_this.height()/2
+                }
+                $(ops.trigger).on("touchstart",function(event){
+                    var touch = event.originalEvent.changedTouches[0];
+                    var dis = angle(ops.centerX,ops.centerY,touch.pageX, touch.pageY);
+                    startAngle = dis;
+                    //再次滑动转盘后的角度与上一次结束角度不一致的情况(内盘)
+                    if(ops.trigger[0].id == 'compass_2'){
+                        if(startAngle != ops.initAngle_in && ops.initAngle_in != 0){
+                            if(ops.initAngle_in>startAngle){
+                                insideDishAngleChangeSecondary((Number(startAngle+360)-ops.initAngle_in));
+                            }
+                            else if(ops.initAngle_in< startAngle){
+                                insideDishAngleChangeSecondary((startAngle-ops.initAngle_in));
+                            }
+
+                        }
+                    }//再次滑动转盘后的角度与上一次结束角度不一致的情况(外盘)
+                    if(ops.trigger[0].id == 'compass_1'){
+                        if(startAngle != ops.initAngle_out && ops.initAngle_out != 0){
+                            if(ops.initAngle_out>startAngle){
+                                outsideDishAngleChangeSecondary((Number(startAngle+360)-ops.initAngle_out));
+                            }
+                            else if(ops.initAngle_out< startAngle){
+                                outsideDishAngleChangeSecondary((startAngle-ops.initAngle_out));
+                            }
+
+                        }
+                    }
+                    $(document).on("touchmove",movehandle);
+                });
+                $(ops.trigger).on("touchend",function(event) {
+                    var touch = event.originalEvent.changedTouches[0];
+                    var dis = angle(ops.centerX,ops.centerY,touch.pageX, touch.pageY);
+                    ops.initAngle_in =dis;
+                    ops.initAngle_out =dis;
+                    if(ops.trigger[0].id == 'compass_1'){
+                        console.log(dis)
+                        outsideDishAngleChange(dis);
+                    }
+                    else if(ops.trigger[0].id == 'compass_2') {
+                        console.log(dis)
+                        insideDishAngleChange(dis);
+                    }
+                    else if(ops.trigger[0].id == 'compass_4') {
+                        angleOrLink(dis)
+                    }
+                    $(document).unbind("touchmove");
+                    if(ops.inertia)inertiaShow();
+                });
+            }
+            //鼠标移动时处理事件
+            function movehandle(event){
+                var touch = event.originalEvent.targetTouches[0];
+                var dis = angle(ops.centerX,ops.centerY,touch.pageX, touch.pageY);
+                if(ops.debug)
+                /*
+                                        console.log(ops.centerX+"-"+ops.centerY+"|"+touch.pageX+"-"+touch.pageY+" "+dis);
+                */
+                    rotate(dis);
+            }
+            //计算两点的线在页面中的角度
+            function angle(centerx, centery, endx, endy) {
+                var diff_x = endx - centerx,
+                    diff_y = endy - centery;
+                var c=360 * Math.atan2(diff_y , diff_x) / (2 * Math.PI);
+                c=c<=0?(360+c):c;
+                if(ops.trigger[0].id == 'compass_2'){
+                    return c+45;
+                }
+                else if(ops.trigger[0].id == 'compass_4') {
+                    return c;
+                }
+                else if(ops.trigger[0].id == 'compass_1') {
+                    return c+45;
+                }
+            }
+            //惯性旋转
+            function inertiaShow(angle){
+
+            }
+            //设置角度
+            function rotate(angle,step){
+                $(_this).css("transform", "translate3d(-50%,-50%,0) rotateZ(" + angle + "deg)");
+            }
+            // 内盘集合修改
+            function insideDishAngleChange(angle) {
+                ops.insideCollection.forEach(function (ele,index) {
+                    ele.reverse = false;
+                });
+                if(angle>startAngle){
+                    angle = angle - startAngle
+                }
+                else if(angle< startAngle){
+                    angle = angle+360 -startAngle
+                }
+                ops.insideCollection.forEach(function (ele,index) {
+                    ele.insideDishMin = (Number(angle)+Number(ele.insideDishMin))%360;
+                    ele.insideDishMax = (Number(angle)+Number(ele.insideDishMax))%360;
+                    if(ele.insideDishMin > ele.insideDishMax){
+                        ele.reverse = true;
+                    }
+                });
+            }
+            // 内盘集合修改2
+            function insideDishAngleChangeSecondary(angle) {
+
+                ops.insideCollection.forEach(function (ele,index) {
+                    ele.reverse = false;
+                });
+                ops.insideCollection.forEach(function (ele,index) {
+                    ele.insideDishMin = (angle+Number(ele.insideDishMin))%360;
+                    ele.insideDishMax = (angle+Number(ele.insideDishMax))%360;
+                    if(ele.insideDishMin > ele.insideDishMax){
+                        ele.reverse = true;
+                    }
+                });
+
+
+            }
+            // 外盘盘集合修改
+            function outsideDishAngleChange(angle) {
+                ops.outsideCollection.forEach(function (ele,index) {
+                    ele.reverse = false;
+                });
+                if(angle>startAngle){
+                    angle = angle - startAngle
+                }
+                else if(angle< startAngle){
+                    angle = angle+360 -startAngle
+                }
+                ops.outsideCollection.forEach(function (ele,index) {
+                    ele.outsideDishMin = (Number(angle)+Number(ele.outsideDishMin))%360;
+                    ele.outsideDishMax = (Number(angle)+Number(ele.outsideDishMax))%360;
+                    if(ele.outsideDishMin > ele.outsideDishMax){
+                        ele.reverse = true;
+                    }
+                });
+            }
+            // 外盘盘集合修改2
+            function outsideDishAngleChangeSecondary(angle) {
+                ops.outsideCollection.forEach(function (ele,index) {
+                    ele.reverse = false;
+                });
+                ops.outsideCollection.forEach(function (ele,index) {
+                    ele.outsideDishMin = (angle+Number(ele.outsideDishMin))%360;
+                    ele.outsideDishMax = (angle+Number(ele.outsideDishMax))%360;
+                    if(ele.outsideDishMin > ele.outsideDishMax){
+                        ele.reverse = true;
+                    }
+                });
+            }
+            // 指针指向角度变化和生成url
+            function angleOrLink(angle) {
+                Angle = angle;
+            }
+            Init();
+        };
+    })(jQuery);
+    $("#compass_2").RotateH({trigger:$("#compass_2"),debug:true,insideCollection:insideCollection,initAngle_in:initAngle_in});
+    $("#compass_4").RotateH({trigger:$("#compass_4"),debug:true,Angle: Angle});
+    $("#compass_1").RotateH({trigger:$("#compass_1"),debug:true,outsideCollection:outsideCollection,initAngle_out:initAngle_out});
+
+    // 内盘位置确定、外盘位置确定、指针位置确定
+
+    // 点击按钮跳转链接
+    var link;
+    $('#compass_5').on('click',function(){
+        var angle = Angle;
+        // 内盘标号
+        insideCollection.forEach(function (ele,index) {
+            if(angle >= ele.insideDishMin%360 && angle <= (ele.insideDishMax%360 ==0?360:ele.insideDishMax%360)){
+                link = ele.index;
+            }
+            else if(ele.reverse){
+                if(angle<=360 && angle >=270){
+                    if(angle >= ele.insideDishMin%360 && angle <= (ele.insideDishMax%360 ==0?360:ele.insideDishMax%360+360)){
+                        link = ele.index;
+                    }
+                }
+                else if(angle>=0&&angle<=90){
+                    if(angle+360 >= ele.insideDishMin%360 && angle+360 <= (ele.insideDishMax%360 ==0?360:ele.insideDishMax%360+360)){
+                        link = ele.index;
+                    }
+                }
+            }
+        });
+        // 外盘标号
+        outsideCollection.forEach(function (ele,index) {
+            if(angle >= ele.outsideDishMin%360 && angle <= (ele.outsideDishMax%360 ==0?360:ele.outsideDishMax%360)){
+                link = link+ele.index;
+                console.log(linkObj[link]);
+            }
+            else if(ele.reverse){
+                if(angle<=360 && angle >=270){
+                    if(angle >= ele.outsideDishMin%360 && angle <= (ele.outsideDishMax%360 ==0?360:ele.outsideDishMax%360+360)){
+                        link = link+ele.index;
+                        console.log(linkObj[link]);
+                    }
+                }
+                else if(angle>=0&&angle<=90){
+                    if(angle+360 >= ele.outsideDishMin%360 && angle+360 <= (ele.outsideDishMax%360 ==0?360:ele.outsideDishMax%360+360)){
+                        link = link+ele.index;
+                        console.log(linkObj[link]);
+                    }
+                }
+            }
+        })
+    })
+</script>
+</body>
+</html>
