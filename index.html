@@ -25,8 +25,8 @@
 </div>
 <script>
     var Angle = 0;
-    var initAngle_in = 360;
-    var initAngle_out = 351;
+    var initAngle_in = 270;
+    var initAngle_out = 270;
     var insideCollection = [
         {
             /* GC+S1 */
@@ -218,7 +218,16 @@
                 /*
                                         console.log(ops.centerX+"-"+ops.centerY+"|"+touch.pageX+"-"+touch.pageY+" "+dis);
                 */
-                    rotate(dis);
+                    if(ops.trigger[0].id == 'compass_1'){
+                        rotate(dis+90);
+                    }
+                    else if(ops.trigger[0].id == 'compass_2'){
+                        rotate(dis+90);
+                    }
+                    else {
+
+                        rotate(dis);
+                    }
             }
             //计算两点的线在页面中的角度
             function angle(centerx, centery, endx, endy) {
@@ -226,15 +235,8 @@
                     diff_y = endy - centery;
                 var c=360 * Math.atan2(diff_y , diff_x) / (2 * Math.PI);
                 c=c<=0?(360+c):c;
-                if(ops.trigger[0].id == 'compass_2'){
-                    return c+45;
-                }
-                else if(ops.trigger[0].id == 'compass_4') {
-                    return c;
-                }
-                else if(ops.trigger[0].id == 'compass_1') {
-                    return c+45;
-                }
+
+                return c;
             }
             //惯性旋转
             function inertiaShow(angle){
